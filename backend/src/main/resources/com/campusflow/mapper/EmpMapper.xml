@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campusflow.mapper.EmpMapper">
+    <!-- 
+        update emp 
+        set name='张三', phone='13800138000', update_time='2026-01-07 14:30:00'
+        where id=1;
+     -->
+    <update id="update">
+        update emp
+        <set>
+            <if test="username != null and username != '' ">username=#{username},</if>
+            <if test="password != null and password != '' ">password=#{password},</if>
+            <if test="name != null and name != '' ">name=#{name},</if>
+            <if test="gender != null">gender=#{gender},</if>
+            <if test="phone != null and phone != '' ">phone=#{phone},</if>
+            <if test="job != null">job=#{job},</if>
+            <if test="image != null and image !='' ">image=#{image},</if>
+            <if test="salary != null">salary=#{salary},</if>
+            <if test="entryDate != null">entry_date=#{entryDate},</if>
+            <if test="deptId != null">dept_id=#{deptId},</if>
+            <if test="updateTime != null">update_time=#{updateTime},</if>
+        </set>
+        where id=#{id};
+    </update>
+    
+
+
+    <!-- 
+        delete from emp where id in (1, 2, 3);
+     -->
+    <delete id="deleteByIds">
+        delete from emp where id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+
+
+
+    <!-- 分页查询与总数查询共用同一组筛选条件，避免总数与列表不一致 -->
+    <sql id="pageCondition">
+        <where>
+            <if test="name != null and name != ''">e.name like concat('%',#{name},'%')</if>
+            <if test="gender != null">and e.gender = #{gender}</if>
+            <if test="begin != null and end != null">and e.entry_date between #{begin} and #{end}</if>
+        </where>
+    </sql>
+
+    <select id="getCountByCondition" resultType="long">
+        select count(*)
+        from emp e left join dept d on e.dept_id = d.id
+        <include refid="pageCondition"/>
+    </select>
+
+    <!-- 
+        select e.*, d.name deptName
+        from emp e left join dept d on e.dept_id = d.id
+        where e.name like concat('%', '王', '%') and e.gender = 2 and e.entry_date between '2021-01-01' and '2022-12-31'
+        order by e.update_time desc
+        limit 10, 5;
+     -->
+    <select id="pageList" resultType="com.campusflow.pojo.Emp">
+        select e.*,
+               d.name deptName
+        from emp e left join dept d on e.dept_id = d.id
+        <include refid="pageCondition"/>
+        order by e.update_time desc
+        limit #{start},#{pageSize};
+    </select>
+
+
+    <!-- 
+        select *
+        from emp
+        where id=3;
+     -->
+    <select id="selectById" resultType="com.campusflow.pojo.Emp">
+        select e.*, d.name deptName
+        from emp e left join dept d on e.dept_id = d.id
+        where e.id=#{id};
+    </select>
+
+
+
+    <!-- 
+        select
+            (case when job=1 then '辅导员'
+                  when job=2 then '任课教师'
+                  when job=3 then '教务管理员'
+                  when job=4 then '系主任'
+                  when job=5 then '招生专员'
+                  else '其他' end) pos,
+            count(*) num
+        from emp group by job order by num
+    -->
+    <select id="countEmpJobData" resultType="java.util.Map">
+        select
+            (case when job=1 then '辅导员'
+                  when job=2 then '任课教师'
+                  when job=3 then '教务管理员'
+                  when job=4 then '系主任'
+                  when job=5 then '招生专员'
+                  else '其他' end) pos,
+            count(*) num
+        from emp group by job order by num
+    </select>
+
+
+
+
+    <!-- 
+        select if(gender=1,'男','女') name,count(*) value from emp group by gender ;
+     -->
+    <select id="countGenderData" resultType="java.util.Map">
+        select if(gender=1,'男','女') name,count(*) value from emp group by gender ;
+    </select>
+
+
+
+
+
+    <!-- 列表接口不返回 password 字段 -->
+    <select id="findAll" resultType="com.campusflow.pojo.Emp">
+        select id, username, name, gender, image, job, salary, entry_date, dept_id, create_time, update_time from emp;
+    </select>
+</mapper>
