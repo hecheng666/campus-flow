@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campusflow.mapper.ClazzsMapper">
+
+    <!-- 
+        insert into clazz (room, master_id, name, begin_date, end_date, subject, create_time, update_time) 
+        values ('301教室', 1, '计算机1班', '2026-03-01', '2026-06-30', '软件工程', '2026-01-07 16:00:00', '2026-01-07 16:00:00');
+     -->
+    <insert id="insert">
+        insert into clazz
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="room != null and room != ''">room,</if>
+        <if test="masterId != null">master_id,</if>
+        name,begin_date,end_date,subject,create_time,update_time
+        </trim>
+        values
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="room != null and room != ''">#{room},</if>
+        <if test="masterId != null">#{masterId},</if>
+        #{name},#{beginDate},#{endDate},#{subject},#{createTime},#{updateTime}
+        </trim>
+    </insert>
+
+
+
+    <!-- 
+        select 
+            c.*, 
+            e.name masterName,
+            case when c.begin_date>now() then '未开始' 
+                when now()>c.end_date then '已结课' 
+                else '在读中' end status
+        from clazz c 
+        left join emp e on c.master_id=e.id;
+     -->
+    <select id="findAll" resultType="com.campusflow.pojo.Clazz">
+        select
+        c.*,
+        e.name masterName,
+        case when c.begin_date>now() then '未开始' when now()>c.end_date then '已结课' else '在读中' end status
+        from clazz c left join emp e on c.master_id=e.id;
+    </select>
+
+
+
+
+    <!-- 分页查询与总数共用同一组条件 -->
+    <sql id="pageCondition">
+        <where>
+            <if test="name != null and name != ''">c.name like concat('%',#{name},'%')</if>
+            <if test="begin != null and end != null">and c.end_date between #{begin} and #{end}</if>
+        </where>
+    </sql>
+
+    <select id="getCountByCondition" resultType="long">
+        select count(*) from clazz c
+        <include refid="pageCondition"/>
+    </select>
+
+    <!-- 
+        select 
+            c.*, 
+            e.name masterName,
+            case when c.begin_date>now() then '未开始' 
+                when now()>c.end_date then '已结课' 
+                else '在读中' end status
+        from clazz c 
+        left join emp e on c.master_id=e.id
+        where c.name like concat('%', '计算机', '%') and c.end_date between '2026-01-01' and '2026-12-31'
+        order by c.update_time desc
+        limit 0, 10;
+     -->
+    <select id="pageList" resultType="com.campusflow.pojo.Clazz">
+        select
+            c.*,
+            e.name masterName,
+            case when c.begin_date>now() then '未开始' when now()>c.end_date then '已结课' else '在读中' end status
+        from clazz c left join emp e on c.master_id=e.id
+        <include refid="pageCondition"/>
+        order by c.update_time desc
+        limit #{start},#{pageSize};
+    </select>
+    <select id="findById" resultType="com.campusflow.pojo.Clazz">
+        select
+            c.*,
+            e.name masterName,
+            case when c.begin_date>now() then '未开始' when now()>c.end_date then '已结课' else '在读中' end status
+        from clazz c left join emp e on c.master_id=e.id
+        where c.id=#{id};
+    </select>
+
+
+
+
+
+    <!-- 
+        update clazz 
+        set room='402教室', master_id=2, subject='Java高级'
+        where id=1;
+     -->
+    <update id="update">
+        update clazz
+        <set>
+            <if test="name != null and name != ''">name=#{name},</if>
+            <if test="room != null and room != ''">room=#{room},</if>
+            <if test="beginDate != null">begin_date=#{beginDate},</if>
+            <if test="endDate != null">end_date=#{endDate},</if>
+            <if test="masterId != null">master_id=#{masterId},</if>
+            <if test="subject != null">subject=#{subject},</if>
+        </set>
+        where id=#{id};
+    </update>
+</mapper>

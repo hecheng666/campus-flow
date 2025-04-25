@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campusflow.mapper.StudentMapper">
+
+    <!-- 
+        select id, name, no, gender, phone, degree, id_card, is_college, address, graduation_date, violation_count, violation_score, clazz_id, create_time, update_time 
+        from student;
+     -->
+    <update id="update">
+        update student
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="no != null and no != ''">no = #{no},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="degree != null">degree=#{degree},</if>
+            <if test="idCard != null and idCard != ''">id_card = #{idCard},</if>
+            <if test="isCollege != null">is_college = #{isCollege},</if>
+            <if test="address != null and address != ''">address = #{address},</if>
+            <if test="graduationDate != null">graduation_date = #{graduationDate},</if>
+            <if test="violationCount != null">violation_count = #{violationCount},</if>
+            <if test="violationScore != null">violation_score = #{violationScore},</if>
+            <if test="clazzId != null">clazz_id = #{clazzId},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id=#{id};
+    </update>
+
+
+
+    <!-- 
+        update student
+        set violation_score = 5 + violation_score,
+            violation_count = violation_count + 1,
+            update_time = now()
+        where id = 1001;
+     -->
+    <update id="updateViolation">
+        update student
+        set violation_score = #{score}+violation_score,
+            violation_count = violation_count+1,
+            update_time = now()
+        where id = #{id}
+    </update>
+
+
+    <!-- 
+        delete from student where id in (1001,1002,1003);
+     -->
+    <delete id="delete">
+        delete from student where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+
+
+    <!-- 分页查询与总数共用同一组条件 -->
+    <sql id="pageCondition">
+        <where>
+            <if test="name != null and name != ''">s.name like concat('%',#{name},'%')</if>
+            <if test="degree != null">and s.degree = #{degree}</if>
+            <if test="clazzId != null">and s.clazz_id = #{clazzId}</if>
+        </where>
+    </sql>
+
+    <select id="getCountByCondition" resultType="long">
+        select count(*) from student s
+        <include refid="pageCondition"/>
+    </select>
+
+    <!-- 
+        select s.*, c.name clazzName 
+        from student s left join clazz c on s.clazz_id = c.id 
+        where s.name like concat('%', '王', '%') and s.degree = 2 and s.clazz_id = 102 
+        limit 16, 8;
+     -->
+    <select id="pageList" resultType="com.campusflow.pojo.Student">
+        select s.*,c.name clazzName from student s left join clazz c on s.clazz_id = c.id
+        <include refid="pageCondition"/>
+        order by s.update_time desc
+        limit #{start},#{pageSize};
+    </select>
+
+
+
+    <!-- 
+        select 
+            case when s.degree = 1 then '初中'
+                when s.degree = 2 then '高中'
+                when s.degree = 3 then '大专'
+                when s.degree = 4 then '本科'
+                when s.degree = 5 then '硕士'
+                when s.degree = 6 then '博士'
+                else '其他' end as name,
+            count(*) as value 
+        from student s 
+        left join clazz c on s.clazz_id = c.id
+        group by s.degree;
+     -->
+    <select id="countDegreeData" resultType="java.util.Map">
+        select case when s.degree = 1 then '初中'
+                    when s.degree = 2 then '高中'
+                    when s.degree = 3 then '大专'
+                    when s.degree = 4 then '本科'
+                    when s.degree = 5 then '硕士'
+                    when s.degree = 6 then '博士'
+                    else '其他' end
+                   name,count(*) value from student s left join clazz c on s.clazz_id = c.id
+        group by s.degree;
+    </select>
+
+
+    <!-- 
+        select c.name, count(*) value 
+        from clazz c left join student s on c.id = s.clazz_id 
+        group by c.name;
+     -->
+    <!-- 用 count(s.id) 避免空班级被 left join 统计成 1 人 -->
+    <select id="getStudentCountData" resultType="java.util.Map">
+        select c.name,count(s.id) value from clazz c left join student s on c.id = s.clazz_id group by c.name;
+    </select>
+</mapper>
